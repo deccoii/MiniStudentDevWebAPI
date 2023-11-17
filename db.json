@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "el@gmail.com",
+      "password": "1234",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "email": "tb@gmail.com",
+      "password": "1234",
+      "role": "student"
+    }
+  ],
+  "courses": [
+    {
+      "id": 1,
+      "title": "Maths",
+      "date": "12-09-2023"
+    },
+    {
+      "id": 2,
+      "title": "Versioning Git",
+      "date": "11-23-2023"
+    }
+  ],
+  "students-courses": [
+
+  ]
+}
