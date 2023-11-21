@@ -20,18 +20,11 @@ let createCourseSchema = object({
 let updateCourseSchema = object({
   title: string().required().trim(),
   date: date().required()
-});
+})
 
 let createStudentCourseSchema = object({
-  user_id: number().required(),
-  course_id: number().required(),
+  student_id: number().required(),
+  course_id: number().required()
 });
 
-let updateStudentCourseSchema = object({
-  user_id: number().required(),
-  course_id: number().required(),
-  registeredAt: date().required(),
-  signedAt: date().required()
-});
-
-export { createUserSchema, updateUserSchema, createCourseSchema, updateCourseSchema, createStudentCourseSchema, updateStudentCourseSchema};
+export { createUserSchema, updateUserSchema, createCourseSchema, updateCourseSchema, createStudentCourseSchema};

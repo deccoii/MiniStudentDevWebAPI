@@ -8,9 +8,15 @@
     },
     {
       "id": 2,
-      "email": "tb@gmail.com",
+      "email": "ab@gmail.com",
       "password": "1234",
       "role": "student"
+    },
+    {
+      "id": 3,
+      "email": "rf@gmail.com",
+      "password": "1234",
+      "role": "admin"
     }
   ],
   "courses": [
@@ -21,11 +27,22 @@
     },
     {
       "id": 2,
-      "title": "Versioning Git",
-      "date": "11-23-2023"
+      "title": "Histoire",
+      "date": "12-08-2023"
     }
   ],
-  "students-courses": [
-
+  "students_courses": [
+    {
+      "student_id": 2,
+      "course_id": 1,
+      "registeredAt": "2023-11-20T23:08:34.496Z",
+      "signedAt": "2023-11-21T21:15:31.489Z"
+    },
+    {
+      "student_id": 2,
+      "course_id": 2,
+      "registeredAt": "2023-11-21T22:06:06.460Z",
+      "signedAt": null
+    }
   ]
 }

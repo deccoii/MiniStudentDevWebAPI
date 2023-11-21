@@ -1,17 +1,13 @@
 import Express, { NextFunction, Request, Response } from 'express'
 import { ValidationError } from 'yup';
 
-import { createCourseSchema, createStudentCourseSchema, createUserSchema, updateUserSchema } from './validation'
+import { createCourseSchema, createUserSchema, createStudentCourseSchema} from './validation'
 import db from './db'
+import e from 'express';
 
 const app = Express()
 
-let auth = 2
-let user_id = -1
-
 app.use(Express.json())
-
-if (auth > 1) {
 
     // Get all users
   app.get('/users', async (req, res) => {
@@ -51,41 +47,78 @@ if (auth > 1) {
     }
   }
 
-  if (auth = 2) {
-    // curl -X POST -d '{"email": "el@gmail.com", "password": "1234", "role": "admin"}' -H "Content-Type: application/json" http://localhost:3000/users
+  // Authentification function
+  function auth(email: string, password: string): number {
+    const lowerCaseEmail = email.toLowerCase(); 
+    const user = db.data.users.find((u: { email: string, password: string, role: string }) => u.email.toLowerCase() === lowerCaseEmail && u.password === password);
+
+    if (user) {
+        if (user.role === 'admin') {
+            return 2;
+        } else if (user.role === 'student') {
+            return 1;
+        }
+    }
+
+    return 0;
+  }
+
+
+    // curl -X POST -d '{"creator_email": "el@gmail.com", "creator_password": "1234", "email": "rf@gmail.com", "password": "1234", "role": "admin"}' -H "Content-Type: application/json" http://localhost:3000/users
     // POST /users with body { email: string, password: string, role: string }
     // Add a new user in DB
     app.post('/users', validateSchema(createUserSchema), async (req, res) => {
-      const person = req.body    
+      const person = req.body  
       
-      // Load data from db.json into db.data
       await db.read()
+
+      const creat_email = person.creator_email
+      const creat_pass = person.creator_password
+
+      if (auth(creat_email, creat_pass) !== 2) {
+        return res.status(503).json({ error: 'Access Denied' });
+      }
+      
+      if (person.role !== "admin" && person.role !== "student") {
+        return res.status(404).json({error: 'Unvalid role for user'})
+      }
+
 
       const lastCreatedPerson = db.data.users[db.data.users.length - 1]
       const id = lastCreatedPerson ? lastCreatedPerson.id + 1 : 1
 
-      db.data.users.push({ id, ...person })
+      const email = person.email
+      const password = person.password
+      const role = person.role
 
-      // Save data from db.data to db.json file
+      db.data.users.push({ id, email, password, role })
+
       await db.write()
 
       res.json({ id })
     })
 
 
-    // curl -X POST -d '{"title": "Maths", "date": "12-09-2023"}' -H "Content-Type: application/json" http://localhost:3000/courses
-    // POST /users with body { title: string, date: date}
-    // Add a new user in DB
+    // curl -X POST -d '{"email": "el@gmail.com", "password": "1234", "title": "Maths", "date": "12-09-2023"}' -H "Content-Type: application/json" http://localhost:3000/courses
+    // Add a new Course in DB
     app.post('/courses', validateSchema(createCourseSchema), async (req, res) => {
+      const { email, password } = req.body
       const course = req.body    
       
       // Load data from db.json into db.data
       await db.read()
 
+      if (auth(email, password) !== 2) {
+        return res.status(403).json({ error: 'Access Denied' });
+      }
+
       const lastCreatedCourse= db.data.courses[db.data.courses.length - 1]
       const id = lastCreatedCourse ? lastCreatedCourse.id + 1 : 1
 
-      db.data.courses.push({ id, ...course })
+      const title = course.title
+      const date = course.date
+
+      db.data.courses.push({ id, title, date})
 
       // Save data from db.data to db.json file
       await db.write()
@@ -94,73 +127,72 @@ if (auth > 1) {
     })
 
 
-    // curl -X POST '{"user_id": 1, "course_id": 1}' -H "Content-Type: application/json" "http://localhost:3000/students-courses"
-    // POST /users with body { title: string, date: date}
-    // Add a new user in DB
-    app.post('/students-courses', validateSchema(createStudentCourseSchema), async (req, res) => {
-      const student_course = req.body  
-      const date: Date = new Date();
-      const notSignedDate:Date = new Date(0);
-      
-      // Load data from db.json into db.data
+    // curl -X POST -d '{"email": "el@gmail.com", "password": "1234", "student_id": 1, "course_id": 1}' -H "Content-Type: application/json" "http://localhost:3000/students-courses"
+    // Add a new Student_Courses in the DB
+      app.post('/students-courses', validateSchema(createStudentCourseSchema), async (req, res) => {
+      const { email, password } = req.body;
+
       await db.read()
-
-      db.data.students_courses.push({ ...student_course, "registeredAt": date, "signedAt": null})
-
-      // Save data from db.data to db.json file
-      await db.write()
-
-      res.json({student_course})
-    })
-  }
   
-  /*
-  // 3.
-  // PATCH /persons/:id with body { firstName: string, lastName: string }
-  // Update a person in DB
-  app.patch('/persons/:id', validateSchema(updatePersonSchema), async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id)
-    const person = req.body
+      if (auth(email, password) !== 2) {
+        return res.status(503).json({ error: 'Access Denied' });
+      }
 
-    // Load data from db.json into db.data
-    await db.read()
+      const { student_id, course_id } = req.body;
+      const dateNow: Date = new Date();
 
-    const personIndex = db.data.persons.findIndex(person => person.id === id)
-    if (personIndex === -1) {
-      res.sendStatus(404)
-      return
+      const newRecord = {
+          student_id,
+          course_id,
+          registeredAt: dateNow,
+          signedAt: null,
+      };
+
+      db.data.students_courses.push(newRecord);
+      await db.write();
+
+      res.json(newRecord);
+  });
+    
+  //curl -X PATCH --data '{"email": "ab@gmail.com", "password": "1234"}' -H "Content-Type: application/json" "http://localhost:3000/students-courses/1"
+  //Sign a course for Students
+  app.patch('/students-courses/:course_id', async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    const course_id = parseInt(req.params.course_id);
+
+    await db.read();
+  
+    if (auth(email, password) !== 1) {
+      return res.status(403).json({ error: 'Access Denied' });
     }
-
-    db.data.persons[personIndex] = { ...db.data.persons[personIndex], ...person }
-
-    // Save data from db.data to db.json file
-    await db.write()
-
-    res.sendStatus(204)
-  })
-
-  // 4. Qu'est-ce qu'une API REST ?
-  // En 2-3 slides que faut-il retenir ?
-  // Quelle association entre les verbes HTTP et les opérations CRUD ?
-  // Comment nommer les routes ? Singulier ou pluriel ? Majuscule ou minuscule ?
-  // Comment documenter une API REST ? Un package NPM ? Un site web ? Autre ? Avec Express ?
-
-  app.delete('/persons/:id', async (req, res) => {
-    const id = parseInt(req.params.id)
-    await db.read()
-
-    const personIndex = db.data.persons.findIndex(person => person.id === id)
-    if (personIndex === -1) {
-      res.sendStatus(404)
-      return
+  
+    const lowerCaseEmail = email.toLowerCase();
+    const user = db.data.users.find((u: { id: number, email: string, password: string }) => u.email.toLowerCase() === lowerCaseEmail && u.password === password);
+  
+    if (!user) {
+      return res.status(503).json({ error: 'Access Denied' });
     }
+  
+    const studentCourse = db.data.students_courses.find((sc: { student_id: number, course_id: number, registeredAt: Date, signedAt: Date | null }) =>
+      sc.student_id === user.id && sc.course_id === course_id && sc.signedAt === null
+    );
 
-    db.data.persons.splice(personIndex, 1)
-    await db.write()
-    res.sendStatus(204)
-  })
-  */
-}
+    console.log(studentCourse)
+  
+    if (!studentCourse) {
+      return res.status(404).json({ error: 'Student course not found or already signed' });
+    }
+  
+    studentCourse.signedAt = new Date();
+
+    await db.write();
+  
+    res.json(studentCourse);
+  });
+  
+
+
+
 
 app.listen(3000, () => {
   console.log('Server listening on http://localhost:3000')
